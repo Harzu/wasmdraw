@@ -29,17 +29,18 @@ use stdweb::web::event::{
   MouseUpEvent
 };
 
+lazy_static! {
+  static ref flag: AtomicBool = AtomicBool::new(false);
+  static ref canvas: CanvasElement = document().query_selector("#canvas")
+    .unwrap().unwrap().try_into().unwrap();
+  static ref pixel: CanvasRenderingContext2d = canvas
+    .get_context().unwrap();
+}
+
 #[js_export]
 fn Init(w: u32, h: u32) {
   let colors: HtmlElement = document().query_selector(".color__list")
     .unwrap().unwrap().try_into().unwrap();
-  let canvas: CanvasElement = document().query_selector("#canvas")
-      .unwrap().unwrap().try_into().unwrap();
-
-  lazy_static! {
-    static ref flag: AtomicBool = AtomicBool::new(false);
-    static pixel: CanvasRenderingContext2d = canvas.get_context().unwrap();
-  }
 
   canvas.set_height(h);
   canvas.set_width(w);
