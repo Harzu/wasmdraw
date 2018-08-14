@@ -5,6 +5,8 @@ extern crate stdweb;
 #[macro_use]
 extern crate serde_derive;
 
+extern crate serde;
+
 #[macro_use]
 extern crate lazy_static;
 
@@ -16,6 +18,7 @@ use stdweb::traits::*;
 use stdweb::unstable::TryInto;
 
 use stdweb::web::{
+  window,
   document,
   HtmlElement,
   CanvasRenderingContext2d
@@ -33,20 +36,20 @@ lazy_static! {
   static ref flag: AtomicBool = AtomicBool::new(false);
   static ref canvas: CanvasElement = document().query_selector("#canvas")
     .unwrap().unwrap().try_into().unwrap();
-  static ref pixel: CanvasRenderingContext2d = canvas
-    .get_context().unwrap();
+  static ref app: HtmlElement = document().query_selector(".app")
+    .unwrap().unwrap().try_into().unwrap();
+  static ref pixel: CanvasRenderingContext2d = canvas.get_context().unwrap();
 }
 
 #[js_export]
 fn Init(w: u32, h: u32) {
   let colors: HtmlElement = document().query_selector(".color__list")
     .unwrap().unwrap().try_into().unwrap();
-
+  /* ========== Global settings ========== */
   canvas.set_height(h);
   canvas.set_width(w);
   canvas.set_attribute("style", "border: 3px solid black");
-
-  // let pixel: CanvasRenderingContext2d = canvas.get_context().unwrap();
+  
   pixel.set_fill_style_color("black");
 
   /* ========== Events ========== */
@@ -64,17 +67,32 @@ fn Init(w: u32, h: u32) {
 
   canvas.add_event_listener(move |_ev: MouseMoveEvent| {
     if flag.load(Ordering::Relaxed) == true {
-      pixel.fill_rect(
-        f64::from(_ev.client_x() - 90),
-        f64::from(_ev.client_y() - 100),
-        10f64,
-        10f64
-      )
+      #[derive(Deserialize, Debug)]
+      struct Point { x: f64, y: f64 };
+      js_deserializable!( Point );
+
+      let val = js! {
+        let e = @{_ev};
+        let app = document.querySelector(".app");
+        let rect = app.getBoundingClientRect();
+        let dx = e.pageX - rect.left;
+        let dy = e.pageY - rect.top;
+
+        return {
+          x: dx,
+          y: dy
+        };
+      };
+
+      let points: Point = val.try_into().unwrap();
+      pixel.fill_rect(points.x, points.y, 10f64, 10f64);
     }
   });
 
   canvas.add_event_listener(move |_ev: MouseUpEvent| {
     flag.store(false, Ordering::Relaxed);
   });
+
+  stdweb::event_loop();
   /* ========== Events end ========== */
 }
