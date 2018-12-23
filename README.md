@@ -7,6 +7,10 @@ git clone git@github.com:Harzu/wasmdraw.git
 npm install
 
 ```
+yarn
+```shell
+ yarn install
+```
 
 ### Develop
 ```shell
